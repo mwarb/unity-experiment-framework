@@ -3,20 +3,22 @@
 </p>
 
 # UXF - Unity Experiment Framework
-A set of components which simplify human behaviour experiments developed in the Unity engine. This is the development project, if you want to download the package, see [Releases](https://github.com/jackbrookes/unity-experiment-framework/releases/latest). 
+A set of components which simplify human behaviour experiments developed in the Unity engine. This is the development project, if you want to download the package, do not clone this repository, see "Get Started" below. 
+
+Read the [paper](https://doi.org/10.1101/459339) (preprint)
 
 If you have developed a project using UXF please [let me know](http://twitter.com/jackbrookes)! 
 
 **Contents**
 - [Get started](#get-started)
 - [Features](#features)
-    - [Programming style](#programming-style)
-    - [Data collection](#data-collection)
-    - [Events](#events)
-    - [CSV Participant List](#csv-participant-list)
-    - [Settings system](#settings-system)
-    - [UI](#ui)
-    - [File IO](#file-io)
+  - [Programming style](#programming-style)
+  - [Data collection](#data-collection)
+  - [Events](#events)
+  - [CSV Participant List](#csv-participant-list)
+  - [Settings system](#settings-system)
+  - [UI](#ui)
+  - [File IO](#file-io)
 - [Example](#example)
 - [Development](#development)
 - [Documentation](#documentation)
@@ -24,15 +26,17 @@ If you have developed a project using UXF please [let me know](http://twitter.co
 
 ## Get started
 
-1. Import the latest ```UXF.unitypackage``` [release](https://github.com/jackbrookes/unity-experiment-framework/releases/latest) to your existing Unity project.
+1. Import the latest ```UXF.unitypackage``` [release](https://github.com/immersivecognition/unity-experiment-framework/releases/latest) to your existing Unity project.
 
-2. In Unity, go to `Edit` -> `Player` -> `Other` and change API Compatibility Level to .NET 2.0. 
+2. The UXF Setup Wizard will launch (or via the top menu: UXF > UXF Wizard) - Use it to fix .NET compatibility issues. 
 
-3. Open an example scene or add the `[UXF_Rig]` prefab to your scene.
+3. Open an example scene.
 
 4. Press play, and use the UI to create a new participant list in an appropriate directory.
 
 5. Press start to begin the session.
+
+Visit the [Wiki](https://github.com/immersivecognition/unity-experiment-framework/wiki) for more detail.
 
 ## Features
 
@@ -47,9 +51,26 @@ UXF automates the process of collecting data.
 
 **Behavioural data** is collected with 1 row per `Trial`, and automatically records some values such as the timestamp of the start and end of the trial. Developers can easily record observations of any type and associate them with a trial. Data is output with one row per trial in a results csv file.
 
-**Continuous data** is data that is measured contunously over time during a trial. The main use case of this is to track the position and rotation of any object in the scene, which is captured at whatever frame rate the application is running at (in the `Update()` loop) by adding a `PositionRotationTracker` component to a GameObject. This can be used to track positions of user controlled objects (such as hands or head in a virtual reality application) or an arbitrary object in the scene (e.g. some kind of stimuli). However this system is generic and developers can create their own `Tracker` classes that perform measurements of any variable during trials. 
+**Continuous data** is data that is measured continuously over time during a trial. The main use case of this is to track the position and rotation of any object in the scene, which is captured at whatever frame rate the application is running at (in the `Update()` loop) by adding a `PositionRotationTracker` component to a GameObject. This can be used to track positions of user controlled objects (such as hands or head in a virtual reality application) or an arbitrary object in the scene (e.g. some kind of stimuli). However this system is generic and developers can create their own `Tracker` classes that perform measurements of any variable during trials. 
 
 Data is stored in CSV files with automatic handling of file & directory naming.
+
+UXF also stores other data in the form of `.json` files (full details on the [Wiki](https://github.com/immersivecognition/unity-experiment-framework/wiki)). Running a session with UXF will result in an output like this (assuming three trials with a tracked object called `object`).
+
+```
+Path: /experiment_name/participant_id/session_number/
+
+Filename                   Description
+------------------------ | ----------------------------------------------------------
+log.csv                  | Copy of all Debug.Log calls during the Session
+notes.json               | Notes collected by the Notes UI
+participant_details.json | Copy of participant details (e.g. info entered via the UI)
+object_movement_T001.csv | Position and rotation of "object" within trial 1
+object_movement_T002.csv | Position and rotation of "object" within trial 2
+object_movement_T003.csv | Position and rotation of "object" within trial 3
+settings.json            | Copy of the settings applied to the Session
+trial_results.csv        | Main results file (behavioural data)
+```
 
 ### Events
 
@@ -82,21 +103,18 @@ UXF classes will be useful in two main parts of your project:
 ```csharp
 class ExperimentBuilder : Monobehaviour
 {
-
-    UXF.Session session;
+    // set this to reference your UXF Session in the inspector
+    public UXF.Session session;
     
     // assign this method to the Session OnSessionBegin UnityEvent in its inspector
-    public void GenerateAndRun(UXF.Session session) 
+    public void GenerateAndRun() 
     {       
         // Creating a block of 10 trials
         var myBlock = session.CreateBlock(10);
 
         // Add a new setting to trial 1, here just as an example we will apply a setting of "color" "red" 
-        var firstTrial = myBlock.GetTrial(1); //trial number is not 0 indexed
+        var firstTrial = myBlock.FirstTrial; //trial number is not 0 indexed
         firstTrial.settings["color"] = "red";
-
-        // Save session instance reference
-        this.session = session;
 
         // Run first trial
         session.nextTrial.Begin();
@@ -114,7 +132,7 @@ class ExperimentBuilder : Monobehaviour
 class SceneManipulator : MonoBehaviour
 {
 
-    // set this to reference your Session in the inspector
+    // set this to reference your UXF Session in the inspector
     public UXF.Session session;
 
     ...
@@ -145,11 +163,11 @@ More examples are contained in the package.
 
 ## Development
 
-This project is developed under Unity 2017.3.0f3 but should work on all recent versions of Unity.
+This project is developed under Unity 2017.4.2f1 but should work on all recent versions of Unity.
 
 ## Documentation
 
-Visit the [Wiki](https://github.com/jackbrookes/unity-experiment-framework/wiki)
+Visit the [Wiki](https://github.com/immersivecognition/unity-experiment-framework/wiki)
 
 ## Related packages
 
