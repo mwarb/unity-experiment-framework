@@ -1,9 +1,10 @@
 ﻿using System.Collections;
+using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace UXFTools
+namespace UXF.EditorUtils
 {
 
     [InitializeOnLoad]
@@ -17,6 +18,8 @@ namespace UXFTools
         ApiCompatibilityLevel targetApiLevel = ApiCompatibilityLevel.NET_2_0;
 #endif
         static string settingsKey { get { return PlayerSettings.productName + ":uxf_seen_wizard"; } }
+
+        static string version;
 
         static UXFWizard()
         {
@@ -35,6 +38,16 @@ namespace UXFTools
             window.minSize = new Vector2(300, 501);
 			window.titleContent = new GUIContent("UXF Wizard");
             window.Show();
+
+            
+            if (File.Exists("VERSION.txt"))
+            {
+                version = File.ReadAllText("VERSION.txt");
+            }
+            else
+            {
+                version = "unknown";
+            }
         }
 
         static void OnProjectChanged()
@@ -73,6 +86,12 @@ namespace UXFTools
             GUILayout.FlexibleSpace();
 			GUILayout.EndHorizontal();
 
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            GUILayout.Label("Version " + version, EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+			GUILayout.EndHorizontal();
+
             EditorGUILayout.Separator();
 
             GUILayout.Label("Help and info", EditorStyles.boldLabel);
@@ -98,7 +117,7 @@ namespace UXFTools
             GUILayout.Label("Cite UXF", EditorStyles.boldLabel);
 
             if (GUILayout.Button("DOI Link"))
-                Application.OpenURL("https://doi.org/10.1101/459339");
+                Application.OpenURL("https://doi.org/10.3758/s13428-019-01242-0");
 
             EditorGUILayout.Separator();
 
@@ -118,6 +137,26 @@ namespace UXFTools
                     PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Standalone, targetApiLevel);
                 }
             }
+
+
+            EditorGUILayout.Separator();
+
+            GUILayout.Label("WebGL", EditorStyles.boldLabel);
+
+            if (PlayerSettings.WebGL.template == "PROJECT:UXF WebGL")
+            {
+                EditorGUILayout.HelpBox("UXF WebGL template is set correctly.", MessageType.Info);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("UXF WebGL template is not selected as the WebGL Template in Player Settings.", MessageType.Warning);
+                if (GUILayout.Button("Fix"))
+                {
+                    PlayerSettings.WebGL.template = "PROJECT:UXF WebGL";
+                }
+            }
+
+
 
             EditorGUILayout.Separator();
             EditorGUILayout.HelpBox("To show this window again go to UXF -> Show setup wizard in the menubar.", MessageType.None);

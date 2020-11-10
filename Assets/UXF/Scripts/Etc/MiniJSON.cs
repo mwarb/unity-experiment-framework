@@ -34,6 +34,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
+using UnityEngine;
+
 namespace MiniJSON
 {
     // Example usage:
@@ -470,7 +472,7 @@ namespace MiniJSON
             {
                 var instance = new Serializer();
 
-                int level = 1;
+                int level = 0;
                 instance.SerializeValue(obj, ref level);
 
                 return instance.builder.ToString();
@@ -506,6 +508,16 @@ namespace MiniJSON
                 {
                     SerializeString(new string((char)value, 1));
                 }
+                else if (value is Vector3)
+                {
+                    Vector3 v = (Vector3)value;
+                    SerializeObject(new Dictionary<string, object>{ { "x", v.x }, { "y", v.y }, { "z", v.z } }, ref level);
+                }
+                else if (value is Vector2)
+                {
+                    Vector2 v = (Vector2)value;
+                    SerializeObject(new Dictionary<string, object>{ { "x", v.x }, { "y", v.y } }, ref level);
+                }
                 else
                 {
                     SerializeOther(value);
@@ -517,13 +529,13 @@ namespace MiniJSON
                 level++;
                 bool first = true;
 
-                builder.Append("{\n" + Spaces(level));
+                builder.Append("{\r\n" + Spaces(level));
 
                 foreach (object e in obj.Keys)
                 {
                     if (!first)
                     {
-                        builder.Append(",\n" + Spaces(level));
+                        builder.Append(",\r\n" + Spaces(level));
                     }
 
                     SerializeString(e.ToString());
@@ -535,13 +547,13 @@ namespace MiniJSON
                 }
 
                 level--;
-                builder.Append("\n" + Spaces(level) + "}");
+                builder.Append("\r\n" + Spaces(level) + "}");
             }
 
             void SerializeArray(IList anArray, ref int level)
             {
                 level++;
-                builder.Append("[\n" + Spaces(level));
+                builder.Append("[\r\n" + Spaces(level));
 
                 bool first = true;
 
@@ -549,7 +561,7 @@ namespace MiniJSON
                 {
                     if (!first)
                     {
-                        builder.Append(",\n" + Spaces(level));
+                        builder.Append(",\r\n" + Spaces(level));
                     }
 
                     SerializeValue(obj, ref level);
@@ -559,7 +571,7 @@ namespace MiniJSON
 
 
                 level--;
-                builder.Append("\n" + Spaces(level) + "]");
+                builder.Append("\r\n" + Spaces(level) + "]");
 
             }
 
@@ -616,25 +628,22 @@ namespace MiniJSON
                 // NOTE: decimals lose precision during serialization.
                 // They always have, I'm just letting you know.
                 // Previously floats and doubles lost precision too.
-                if (value is double)
-                {
-                    builder.Append(((double) value).ToString("R"));
-                }
-                else if (value is int
-                  || value is uint
-                  || value is long
-                  || value is sbyte
-                  || value is byte
-                  || value is short
-                  || value is ushort
-                  || value is ulong)
-                {
-                    builder.Append(value);
-                }
-                else if (value is double
-                  || value is decimal)
+                if (value is double
+                    || value is float
+                    || value is decimal)
                 {
                     builder.Append(Convert.ToDouble(value).ToString("R"));
+                }
+                else if (value is int
+                    || value is uint
+                    || value is long
+                    || value is sbyte
+                    || value is byte
+                    || value is short
+                    || value is ushort
+                    || value is ulong)
+                {
+                    builder.Append(value);
                 }
                 else
                 {

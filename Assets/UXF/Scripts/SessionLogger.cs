@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using UnityEngine;
 
@@ -14,13 +14,12 @@ namespace UXF
 	public class SessionLogger : MonoBehaviour
 	{	
 		private Session session;
-		private FileIOManager fileIOManager;
-		private DataTable table;
+		private string[] header = new string[]{ "timestamp", "log_type", "message"};
+		private UXFDataTable table;
 
 		void Awake()
 		{
 			AttachReferences(
-				newFileIOManager: GetComponent<FileIOManager>(),
 				newSession: GetComponent<Session>()
 			);
 			Initialise();
@@ -29,11 +28,9 @@ namespace UXF
         /// <summary>
         /// Provide references to other components 
         /// </summary>
-        /// <param name="newFileIOManager"></param>
         /// <param name="newSession"></param>
-        public void AttachReferences(FileIOManager newFileIOManager = null, Session newSession = null)
+        public void AttachReferences(Session newSession = null)
         {
-            if (newFileIOManager != null) fileIOManager = newFileIOManager;
             if (newSession != null) session = newSession;
         }
 
@@ -42,47 +39,47 @@ namespace UXF
 		/// </summary>
 		public void Initialise()
 		{
-			table = new DataTable();
-			table.Columns.Add(
-				new DataColumn("timestamp", typeof(float))
-			);
-            table.Columns.Add(
-                new DataColumn("log_type", typeof(string))
-            );
-            table.Columns.Add(
-                new DataColumn("message", typeof(string))
-            );
-
+			table = new UXFDataTable("timestamp", "log_type", "message");
             Application.logMessageReceived += HandleLog;
-			session.cleanUp += Finalise; // finalise logger when cleaning up the session
+			session.preSessionEnd.AddListener(Finalise); // finalise logger when cleaning up the session
 		}		
 
 		void HandleLog(string logString, string stackTrace, LogType type)
 		{
-			DataRow row = table.NewRow();
-			row["timestamp"] = Time.time;
-			row["log_type"] = type.ToString();
-			row["message"] = logString.Replace(",", string.Empty);
-			table.Rows.Add(row);
+			var row = new UXFDataRow();
+
+			row.Add(("timestamp", Time.time.ToString()));
+			row.Add(("log_type", type.ToString()));
+			row.Add(("message", logString.Replace(",", string.Empty)));
+
+			table.AddCompleteRow(row);
+		}
+
+		/// <summary>
+		/// Manually log a message to the log file.
+		/// </summary>
+		/// <param name="logType">The type of the log. This can be any string you choose.</param>
+		/// <param name="message">The content you wish to log, expressed as a string.</param>
+		public void WriteLog(string logType, string value)
+		{
+			var row = new UXFDataRow();
+
+			row.Add(("timestamp", Time.time.ToString()));
+			row.Add(("log_type", logType));
+			row.Add(("message", value.Replace(",", string.Empty)));
+
+			table.AddCompleteRow(row);
 		}
 
         /// <summary>
         /// Finalises the session logger, saving the data and detaching its logging method from handling Debug.Log messages  
         /// </summary>
-        public void Finalise()
+        public void Finalise(Session session)
 		{
-            WriteFileInfo fileInfo = new WriteFileInfo(
-                WriteFileType.Log,
-                session.BasePath,
-                session.experimentName,
-                session.ppid,
-                session.FolderName,
-                "log.csv"
-                );
+			session.SaveDataTable(table, "log", dataType: UXFDataType.SessionLog);
 
-			fileIOManager.ManageInWorker(() => fileIOManager.WriteCSV(table, fileInfo));
             Application.logMessageReceived -= HandleLog;
-			session.cleanUp -= Finalise;
+			session.preSessionEnd.RemoveListener(Finalise);
         }
 
 	}

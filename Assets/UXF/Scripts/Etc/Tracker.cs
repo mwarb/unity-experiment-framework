@@ -18,33 +18,30 @@ namespace UXF
         /// <summary>
         /// Description of the type of measurement this tracker will perform.
         /// </summary>
-        [ReadOnly]
+        [Tooltip("Description of the type of measurement this tracker will perform.")]
         public string measurementDescriptor;
 
         /// <summary>
-        /// Custom column headers for tracked objects
+        /// Custom column headers for tracked objects. Time is added automatically
         /// </summary>
-        [ReadOnly]
         [Tooltip("Custom column headers for each measurement.")]
         public string[] customHeader = new string[] { };
    
         /// <summary>
-        /// The header used when saving the filename string within our behavioural data.
+        /// A name used when saving the data from this tracker.
         /// </summary>
-        public string filenameHeader
+        public string dataName
         {
             get
             {
                 Debug.AssertFormat(measurementDescriptor.Length > 0, "No measurement descriptor has been specified for this Tracker!");
-                return string.Join("_", new string[]{ objectName, measurementDescriptor, "filename" });
+                return string.Join("_", new string[]{ objectName, measurementDescriptor });
             }
         }
 
-        [SerializeField]
-        [ReadOnly]
         private bool recording;
 
-        List<string[]> data = new List<string[]>();
+        public UXFDataTable data { get; private set; } = new UXFDataTable();
         
         /// <summary>
         /// The header that will go at the top of the output file associated with this tracker
@@ -71,7 +68,7 @@ namespace UXF
         // called by unity just before rendering the frame
         void LateUpdate()
         {
-            RecordRow();
+            if (recording) RecordRow();
         }
 
         /// <summary>
@@ -79,20 +76,9 @@ namespace UXF
         /// </summary>
         public void RecordRow()
         {
-            if (recording)
-            {
-                string[] values = GetCurrentValues();
-
-                if (values.Length != customHeader.Length)
-                    throw new System.InvalidOperationException(string.Format("GetCurrentValues provided {0} values but expected the same as the number of headers! {1}", values.Length, customHeader.Length));
-
-                string[] row = new string[values.Length + 1];
-
-                row[0] = Time.time.ToString();
-                values.CopyTo(row, 1);
-
-                data.Add(row);
-            }
+            UXFDataRow newRow = GetCurrentValues();
+            newRow.Add(("time", Time.time));
+            data.AddCompleteRow(newRow);
         }
 
 
@@ -101,7 +87,7 @@ namespace UXF
         /// </summary>
         public void StartRecording()
         {
-            data.Clear();
+            data = new UXFDataTable(header);
             recording = true;
         }
 
@@ -122,19 +108,10 @@ namespace UXF
         }
 
         /// <summary>
-        /// Returns a copy of the data collected by this tracker.
+        /// Acquire values for this frame and store them in an UXFDataRow. Must return values for ALL columns.
         /// </summary>
         /// <returns></returns>
-        public List<string[]> GetDataCopy()
-        {
-            return data.Clone();
-        }
-
-        /// <summary>
-        /// Acquire values for this frame and store them in an array.
-        /// </summary>
-        /// <returns></returns>
-        protected abstract string[] GetCurrentValues();
+        protected abstract UXFDataRow GetCurrentValues();
 
         /// <summary>
         /// Override this method and define your own descriptor and header.
